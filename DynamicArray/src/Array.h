@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
+#include <type_traits>
+#include <utility>
 
 #ifdef CHECK_ALLOCATIONS
 namespace
@@ -18,23 +20,23 @@ namespace
 			return os;
 		}
 	} g_Stats;
-	void* my_malloc(size_t size)
+	inline void* my_malloc(size_t size)
 	{
 		g_Stats.allocations++;
 		return malloc(size);
 	}
-	void my_free(void* block)
+	inline void my_free(void* block)
 	{
 		g_Stats.deallocations++;
 		free(block);
 	}
 }
 #else
-	void* my_malloc(size_t size)
+	inline void* my_malloc(size_t size)
 	{
 		return malloc(size);
 	}
-	void my_free(void* block)
+	inline void my_free(void* block)
 	{
 		free(block);
 	}
@@ -173,9 +175,10 @@ namespace myStl
 		Array(std::initializer_list<T> initList);
 
 		Array(const Array<T>& other);
-		Array<T>& operator=(const Array<T>& other);
 		Array(Array<T>&& other);
-		Array<T>& operator=(Array<T>&& other);
+		Array<T>& operator=(Array<T> other) noexcept(
+			std::is_nothrow_move_constructible_v<T> &&
+			std::is_nothrow_move_assignable_v<T>);
 
 		~Array();
 
@@ -211,6 +214,7 @@ namespace myStl
 
 	private:
 		void reserve(size_t newCapacity);
+		void swap(Array<T>& other) noexcept;
 	private:
 		T* m_data;
 		size_t m_size;

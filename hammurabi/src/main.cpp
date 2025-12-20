@@ -15,12 +15,12 @@ int main()
 	{
 		GameEngine engine;
 		
-		if (firstRun)
-		{
+	if (firstRun)
+	{
 			engine.ShowMainScreen();
-			firstRun = false;
-		}
-		
+		firstRun = false;
+	}
+	
 		engine.Run();
 
 		system("cls");

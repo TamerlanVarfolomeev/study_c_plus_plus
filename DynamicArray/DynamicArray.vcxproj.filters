@@ -21,10 +21,16 @@
     <ClCompile Include="src\Array.ipp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tests\ArrayTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Array.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

@@ -55,30 +55,6 @@ namespace myStl
 
 
 	template<typename T>
-	inline Array<T>& Array<T>::operator=(const Array<T>& other)
-	{
-		if (this == &other)
-			return *this;
-
-		for (size_t i = 0; i < m_size; i++)
-			m_data[i].~T(); // Вызов деструктора
-		my_free(m_data);
-
-		m_capacity = other.m_capacity;
-		m_size = other.m_size;
-
-		m_data = (T*)my_malloc(sizeof(T) * m_capacity);
-		if (!m_data)
-			throw std::bad_alloc();
-
-		for (size_t i = 0; i < m_size; i++)
-			new (&m_data[i]) T(other.m_data[i]);
-
-		return *this;
-	}
-
-
-	template<typename T>
 	inline Array<T>::Array(Array<T>&& other)
 	{
 		m_capacity = other.m_capacity;
@@ -92,22 +68,11 @@ namespace myStl
 
 	
 	template<typename T>
-	inline Array<T>& Array<T>::operator=(Array<T>&& other)
+	inline Array<T>& Array<T>::operator=(Array<T> other) noexcept(
+		std::is_nothrow_move_constructible_v<T> &&
+		std::is_nothrow_move_assignable_v<T>)
 	{
-		if (this == &other)
-			return *this;
-
-		for (size_t i = 0; i < m_size; i++)
-			m_data[i].~T();
-		my_free(m_data);
-
-		m_capacity = other.m_capacity;
-		m_size = other.m_size;
-		m_data = other.m_data;
-
-		other.m_data = nullptr;
-		other.m_capacity = 0;
-		other.m_size = 0;
+		swap(other);
 		return *this;
 	}
 
@@ -118,9 +83,6 @@ namespace myStl
 		for (size_t i = 0; i < m_size; i++)
 			m_data[i].~T();
 		my_free(m_data);
-		m_size = 0;
-		m_capacity = 0;
-		m_data = nullptr;
 	}
 
 
@@ -134,6 +96,7 @@ namespace myStl
 	template<typename T>
 	inline size_t Array<T>::insert(T&& value)
 	{
+		//move семантика
 		return insert(m_size, std::move(value));
 	}
 
@@ -154,6 +117,7 @@ namespace myStl
 			for (size_t i = m_size; i > index; i--)
 			{
 				new (&m_data[i]) T(std::move(m_data[i - 1]));
+				m_data[i - 1].~T();
 			}
 		}
 		else
@@ -186,7 +150,10 @@ namespace myStl
 		if constexpr (std::is_move_constructible<T>::value)
 		{
 			for (size_t i = m_size; i > index; i--)
+			{
 				new (&m_data[i]) T(std::move(m_data[i - 1]));
+				m_data[i - 1].~T();
+			}
 		}
 		else
 		{
@@ -197,7 +164,7 @@ namespace myStl
 			}
 		}
 
-		new (&m_data[index]) T(value);
+		new (&m_data[index]) T(std::move(value));
 		m_size++;
 
 		return index;
@@ -233,7 +200,10 @@ namespace myStl
 		if constexpr (std::is_move_constructible<T>::value)
 		{
 			for (size_t i = m_size + n - 1; i > index + n - 1; i--)
+			{
 				new (&m_data[i]) T(std::move(m_data[i - n]));
+				m_data[i - n].~T();
+			}
 		}
 		else
 		{
@@ -258,12 +228,15 @@ namespace myStl
 		m_data[index].~T();
 		if constexpr (std::is_move_assignable<T>::value)
 		{
-			for (size_t i = index; i < m_size; i++)
+			for (size_t i = index; i < m_size - 1; i++)
+			{
 				new(&m_data[i]) T(std::move(m_data[i + 1]));
+				m_data[i + 1].~T();
+			}
 		}
 		else
 		{
-			for (size_t i = index; i < m_size; i++)
+			for (size_t i = index; i < m_size - 1; i++)
 			{
 				new(&m_data[i]) T(m_data[i + 1]);
 				m_data[i + 1].~T();
@@ -272,7 +245,7 @@ namespace myStl
 		m_size--;
 	}
 
-
+	// Индексация
 	template<typename T>
 	inline const T& Array<T>::operator[](size_t index) const
 	{
@@ -297,7 +270,10 @@ namespace myStl
 		if constexpr (std::is_move_constructible<T>::value)
 		{
 			for (size_t i = 0; i < m_size; i++)
+			{
 				new (&tmp[i]) T(std::move(m_data[i]));
+				m_data[i].~T();
+			}
 		}
 		else
 		{
@@ -311,6 +287,16 @@ namespace myStl
 		my_free(m_data);
 		m_data = tmp;
 		m_capacity = newCapacity;
+	}
+
+
+	template<typename T>
+	inline void Array<T>::swap(Array<T>& other) noexcept
+	{
+		using std::swap;
+		swap(m_data, other.m_data);
+		swap(m_size, other.m_size);
+		swap(m_capacity, other.m_capacity);
 	}
 
 }
